@@ -1,0 +1,19 @@
+version: '2'
+services:
+  web:
+    build: .
+    image: wiki
+    ports:
+      - "8000:80"
+    volumes:
+      - ~/Documents/wiki/LocalSettings.php:/var/www/html/LocalSettings.php
+      - ~/Documents/wiki/images:/efs/wiki/images
+    links:
+      - db
+  db:
+      image: mariadb:10.1.26
+      restart: always
+      volumes:
+        - ~/Documents/wiki/mysql:/var/lib/mysql:rw
+      environment:
+        MYSQL_ALLOW_EMPTY_PASSWORD: 1

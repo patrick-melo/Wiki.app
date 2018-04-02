@@ -1,0 +1,38 @@
+#!/bin/bash
+log=~/Documents/Wiki/wiki.txt
+docker=/usr/local/bin/docker
+settings=~/Documents/Wiki/LocalSettings.php
+
+trap finish EXIT
+finish() {
+    echo "Terminate web" >>$log 2>&1
+    $docker stop $($docker ps | awk '/wiki_web_1/ {print $1}')
+    echo "Terminate db" >>$log 2>&1
+    $docker stop $($docker ps | awk '/wiki_db_1/ {print $1}')
+}
+
+if [ ! -d ~/Documents/Wiki ]; then
+    mkdir ~/Documents/Wiki
+fi
+
+cd "${0%/*}/../Resources/wiki"
+
+echo "DOCKER BUILD" >>$log 2>&1
+$docker build -t wiki . >>$log 2>&1
+
+[ -d $settings ] && rmdir $settings
+touch $settings
+
+echo "DOCKER COMPOSE" >>$log 2>&1
+$docker-compose up >>$log 2>&1 &
+
+while [ -z "$($docker ps | awk '$11 ~ /wiki_web_1/ {print $1}')" ] ; do
+    echo "Waiting for web..." >>$log 2>&1
+    sleep 1
+done
+
+[ -z $settings ] && rm ~/Documents/Wiki/LocalSettings.php
+
+while [ 1 ] ; do
+    sleep 60
+done
